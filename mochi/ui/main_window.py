@@ -149,7 +149,7 @@ class App(ctk.CTk):
         self._age_chip(info, "年月龄", f"{y} 岁 {m} 月 {d} 天")
 
         self._render_event_section(
-            row=1, title="📅 已发生事件", kind="past",
+            row=1, title="📅 已完成事件", kind="past",
             events=sorted([e for e in cat.events if e.kind == "past"],
                           key=lambda e: e.event_date),
         )
@@ -196,33 +196,89 @@ class App(ctk.CTk):
         ctk.CTkLabel(head, text=title,
                      font=ctk.CTkFont(size=18, weight="bold")
                      ).grid(row=0, column=0, sticky="w")
+        count_text = f"共 {len(events)} 条" if events else ""
+        if count_text:
+            ctk.CTkLabel(head, text=count_text,
+                         font=ctk.CTkFont(size=12),
+                         text_color=("gray50", "gray60")
+                         ).grid(row=0, column=1, sticky="e", padx=(0, 10))
         ctk.CTkButton(head, text="+ 添加", width=80,
                       command=lambda k=kind: self._add_event(k)
-                      ).grid(row=0, column=1, sticky="e")
+                      ).grid(row=0, column=2, sticky="e")
 
         if not events:
+            empty = ctk.CTkFrame(sec, fg_color=("#fafafa", "#262626"),
+                                 corner_radius=12)
+            empty.grid(row=1, column=0, padx=16, pady=(0, 16), sticky="ew")
             ctk.CTkLabel(
-                sec, text="（暂无）",
+                empty, text="（暂无）", height=60,
                 text_color=("gray50", "gray60"),
-            ).grid(row=1, column=0, padx=16, pady=(0, 16), sticky="w")
+            ).pack(expand=True)
             return
 
         body = ctk.CTkFrame(sec, fg_color="transparent")
-        body.grid(row=1, column=0, sticky="ew", padx=8, pady=(0, 12))
-        body.grid_columnconfigure(0, weight=1)
+        body.grid(row=1, column=0, sticky="ew", padx=12, pady=(0, 14))
+        body.grid_columnconfigure(0, weight=1, uniform="evcard")
+        body.grid_columnconfigure(1, weight=1, uniform="evcard")
         assert cat is not None
         for i, ev in enumerate(events):
-            self._render_event_row(body, i, ev, cat)
+            r, c = divmod(i, 2)
+            self._render_event_card(body, r, c, ev, cat)
 
-    def _render_event_row(self, parent, idx, ev: Event, cat: Cat):
-        row = ctk.CTkFrame(parent, corner_radius=10,
-                           fg_color=("#f7f7f7", "#2b2b2b"))
-        row.grid(row=idx, column=0, sticky="ew", padx=8, pady=4)
-        row.grid_columnconfigure(1, weight=1)
-
+    def _render_event_card(self, parent, row, col, ev: Event, cat: Cat):
+        # 颜色方案：已完成=蓝，未来待办=橙，未来过期=红
         d = ev.as_date()
         birth = cat.birth()
         days = (d - birth).days
+        delta = (d - date.today()).days if ev.kind == "future" else 0
+        if ev.kind == "past":
+            accent = ("#3b82f6", "#60a5fa")
+            badge_text, badge_fg = "已完成", ("#dbeafe", "#1e3a5f")
+            badge_tc = ("#1e3a8a", "#bfdbfe")
+        elif delta < 0:
+            accent = ("#dc2626", "#ef4444")
+            badge_text, badge_fg = "已过期", ("#fee2e2", "#5a1d1d")
+            badge_tc = ("#991b1b", "#fca5a5")
+        else:
+            accent = ("#f59e0b", "#fbbf24")
+            badge_text, badge_fg = "待办", ("#fef3c7", "#5a4416")
+            badge_tc = ("#92400e", "#fde68a")
+
+        card = ctk.CTkFrame(parent, corner_radius=14,
+                            fg_color=("#ffffff", "#252525"),
+                            border_width=1,
+                            border_color=("#e5e7eb", "#333333"))
+        card.grid(row=row, column=col, sticky="nsew", padx=6, pady=6)
+        card.grid_columnconfigure(1, weight=1)
+
+        # 左侧状态色条
+        strip = ctk.CTkFrame(card, width=4, corner_radius=2, fg_color=accent)
+        strip.grid(row=0, column=0, rowspan=6, sticky="ns", padx=(8, 0), pady=12)
+        strip.grid_propagate(False)
+
+        # 标题 + 状态徽章
+        title_row = ctk.CTkFrame(card, fg_color="transparent")
+        title_row.grid(row=0, column=1, sticky="ew", padx=14, pady=(14, 4))
+        title_row.grid_columnconfigure(0, weight=1)
+        ctk.CTkLabel(title_row, text=ev.title,
+                     font=ctk.CTkFont(size=15, weight="bold"),
+                     anchor="w"
+                     ).grid(row=0, column=0, sticky="w")
+        badge = ctk.CTkLabel(title_row, text=badge_text,
+                             font=ctk.CTkFont(size=11, weight="bold"),
+                             fg_color=badge_fg, text_color=badge_tc,
+                             corner_radius=8, padx=8, pady=2, height=20)
+        badge.grid(row=0, column=1, sticky="e", padx=(8, 0))
+
+        # 大日期
+        date_str = d.strftime("%Y年%m月%d日")
+        ctk.CTkLabel(card, text=f"📅  {date_str}",
+                     font=ctk.CTkFont(size=13),
+                     text_color=("gray30", "gray80"),
+                     anchor="w"
+                     ).grid(row=1, column=1, sticky="w", padx=14, pady=(0, 8))
+
+        # 信息微芯片
         sign = "-" if days < 0 else ""
         ad = abs(days)
         wks, wd = divmod(ad, 7)
@@ -232,47 +288,66 @@ class App(ctk.CTk):
         else:
             y, m, dd = age_year_month(d, birth)
             ym_text = f"-{y}岁{m}月{dd}天"
-        sub = (f"{d.strftime('%Y-%m-%d')}  ·  "
-               f"{sign}{ad}天  ·  {sign}{wks}周{wd}天  ·  {ym_text}")
+        chips_row = ctk.CTkFrame(card, fg_color="transparent")
+        chips_row.grid(row=2, column=1, sticky="w", padx=14, pady=(0, 8))
+        self._mini_chip(chips_row, f"{sign}{ad}天")
+        self._mini_chip(chips_row, f"{sign}{wks}周{wd}天")
+        self._mini_chip(chips_row, ym_text)
+
+        # 距今 / 已过 / 重复说明
+        meta_parts = []
         if ev.kind == "future":
-            delta = (d - date.today()).days
-            sub += f"  ·  距今 {delta} 天" if delta >= 0 else f"  ·  已过 {-delta} 天"
+            meta_parts.append(f"距今 {delta} 天" if delta >= 0
+                              else f"已过 {-delta} 天")
         if ev.has_repeat():
-            sub += f"  ·  🔁 每 {ev.repeat_value} {REPEAT_LABEL_BY_UNIT.get(ev.repeat_unit, '')}"
+            meta_parts.append(
+                f"🔁 每 {ev.repeat_value} "
+                f"{REPEAT_LABEL_BY_UNIT.get(ev.repeat_unit, '')}")
+        if meta_parts:
+            ctk.CTkLabel(card, text="  ·  ".join(meta_parts),
+                         font=ctk.CTkFont(size=12),
+                         text_color=("gray45", "gray65"), anchor="w"
+                         ).grid(row=3, column=1, sticky="w",
+                                padx=14, pady=(0, 8))
 
-        ctk.CTkLabel(row, text=ev.title,
-                     font=ctk.CTkFont(size=14, weight="bold"),
-                     anchor="w").grid(row=0, column=0, columnspan=2,
-                                      padx=14, pady=(10, 2), sticky="w")
-        ctk.CTkLabel(row, text=sub, anchor="w",
-                     text_color=("gray40", "gray70")
-                     ).grid(row=1, column=0, padx=14, pady=(0, 2), sticky="w")
+        # 备注块
         if ev.note:
-            ctk.CTkLabel(row, text=ev.note, anchor="w", justify="left",
-                         wraplength=600
-                         ).grid(row=2, column=0, columnspan=2,
-                                padx=14, pady=(0, 8), sticky="w")
-        else:
-            ctk.CTkFrame(row, fg_color="transparent", height=6
-                         ).grid(row=2, column=0)
+            note_box = ctk.CTkFrame(card, corner_radius=8,
+                                    fg_color=("#f5f5f5", "#1e1e1e"))
+            note_box.grid(row=4, column=1, sticky="ew",
+                          padx=14, pady=(0, 10))
+            ctk.CTkLabel(note_box, text=ev.note, anchor="w",
+                         justify="left", wraplength=320,
+                         text_color=("gray25", "gray80")
+                         ).pack(fill="x", padx=10, pady=8)
 
-        btns = ctk.CTkFrame(row, fg_color="transparent")
-        btns.grid(row=0, column=1, padx=10, sticky="e")
+        # 底部操作区
+        btns = ctk.CTkFrame(card, fg_color="transparent")
+        btns.grid(row=5, column=1, sticky="e", padx=10, pady=(0, 10))
         if ev.kind == "future":
-            ctk.CTkButton(btns, text="完成", width=60, height=26,
+            ctk.CTkButton(btns, text="完成", width=58, height=28,
                           fg_color="#27ae60", hover_color="#1e8449",
                           command=lambda e=ev: self._complete_event(e)
                           ).pack(side="left", padx=(0, 6))
-        ctk.CTkButton(btns, text="编辑", width=60, height=26,
+        ctk.CTkButton(btns, text="编辑", width=58, height=28,
                       fg_color="transparent", border_width=1,
                       text_color=("gray30", "gray80"),
                       command=lambda e=ev: self._edit_event(e)
                       ).pack(side="left", padx=(0, 6))
-        ctk.CTkButton(btns, text="删除", width=60, height=26,
+        ctk.CTkButton(btns, text="删除", width=58, height=28,
                       fg_color="transparent", border_width=1,
-                      text_color=("gray30", "gray80"),
+                      text_color=("#b91c1c", "#fca5a5"),
+                      hover_color=("#fee2e2", "#3a1d1d"),
                       command=lambda e=ev: self._delete_event(e)
                       ).pack(side="left")
+
+    def _mini_chip(self, parent, text: str):
+        ctk.CTkLabel(parent, text=text,
+                     font=ctk.CTkFont(size=11),
+                     fg_color=("#f1f5f9", "#2f2f2f"),
+                     text_color=("gray25", "gray80"),
+                     corner_radius=6, padx=8, pady=2, height=22
+                     ).pack(side="left", padx=(0, 6))
 
     # ---------- 操作 ----------
     def _add_cat(self):
