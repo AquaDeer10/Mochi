@@ -18,6 +18,18 @@ from ..age_utils import (
 from ..models import Cat, Event, PHOTO_DIR
 from .widgets import REPEAT_LABEL_BY_UNIT, REPEAT_UNIT_LABELS, DatePicker
 
+# 常用事件名称快捷选项，按 kind 区分
+QUICK_TITLES = {
+    "past": [
+        "驱虫", "疫苗", "洗澡", "体检",
+        "剪指甲", "称体重", "绝育", "看医生",
+    ],
+    "future": [
+        "驱虫", "疫苗", "洗澡", "体检",
+        "剪指甲", "称体重", "绝育", "看医生",
+    ],
+}
+
 
 class EventDialog(ctk.CTkToplevel):
     def __init__(self, master, cat: Cat, kind: str, on_save,
@@ -29,7 +41,7 @@ class EventDialog(ctk.CTkToplevel):
         action = "编辑" if event else "添加"
         scope = "历史事件" if kind == "past" else "未来计划"
         self.title(f"{action}{scope}")
-        self.geometry("460x540" if kind == "future" else "460x440")
+        self.geometry("460x620" if kind == "future" else "460x520")
         self.resizable(False, False)
         self.cat = cat
         self.kind = kind
@@ -44,6 +56,21 @@ class EventDialog(ctk.CTkToplevel):
         self.entry_title.pack(fill="x", padx=16)
         if event:
             self.entry_title.insert(0, event.title)
+
+        # 快捷填充：点击后替换名称输入框内容
+        quick_wrap = ctk.CTkFrame(self, fg_color="transparent")
+        quick_wrap.pack(fill="x", padx=16, pady=(6, 0))
+        titles = QUICK_TITLES.get(kind, [])
+        for i, t in enumerate(titles):
+            r, c = divmod(i, 4)
+            quick_wrap.grid_columnconfigure(c, weight=1, uniform="qk")
+            ctk.CTkButton(
+                quick_wrap, text=t, height=26,
+                fg_color="transparent", border_width=1,
+                text_color=("gray25", "gray85"),
+                hover_color=("#e5e7eb", "#333333"),
+                command=lambda v=t: self._fill_title(v),
+            ).grid(row=r, column=c, padx=2, pady=2, sticky="ew")
 
         ctk.CTkLabel(self, text="录入方式").pack(anchor="w", **pad)
         self.mode = ctk.StringVar(value="date")
@@ -117,6 +144,11 @@ class EventDialog(ctk.CTkToplevel):
         state = "normal" if self.repeat_var.get() else "disabled"
         self.ent_repeat.configure(state=state)
         self.cb_repeat.configure(state="readonly" if self.repeat_var.get() else "disabled")
+
+    def _fill_title(self, value: str):
+        self.entry_title.delete(0, "end")
+        self.entry_title.insert(0, value)
+        self.entry_title.focus_set()
 
     def _on_mode_change(self, value):
         m = {"按日期": "date", "按周龄": "weeks", "按年月龄": "ym"}[value]
