@@ -1,6 +1,6 @@
 @echo off
-REM ä¸€é”®æ‰“åŒ…è„šæœ¬ï¼šç”Ÿæˆå•æ–‡ä»¶ exeï¼ˆdist\Mochi.exeï¼‰
-REM é¦–æ¬¡ä½¿ç”¨å‰è¯·å…ˆå®‰è£…ä¾èµ–ï¼š
+REM Ò»¼ü´ò°ü½Å±¾£ºÉú³Éµ¥ÎÄ¼ş exe£¨dist\Mochi.exe£©
+REM Ê×´ÎÊ¹ÓÃÇ°ÇëÏÈ°²×°ÒÀÀµ£º
 REM    .venv\Scripts\activate
 REM    pip install -r requirements.txt
 REM    pip install pyinstaller
@@ -8,11 +8,11 @@ REM    pip install pyinstaller
 setlocal
 cd /d "%~dp0"
 
-REM ä¼˜å…ˆä½¿ç”¨é¡¹ç›®å†… .venv çš„ Pythonï¼Œé¿å…ç³»ç»Ÿ Python ç¼ºå¤± stdlibï¼ˆå¦‚ _ctypesï¼‰
+REM ÓÅÏÈÊ¹ÓÃÏîÄ¿ÄÚ .venv µÄ Python£¬±ÜÃâÏµÍ³ Python È±Ê§ stdlib£¨Èç _ctypes£©
 if exist ".venv\Scripts\python.exe" (
     set "PY=.venv\Scripts\python.exe"
 ) else (
-    echo [!] æœªæ‰¾åˆ° .venvï¼Œå°†ä½¿ç”¨ç³»ç»Ÿ python
+    echo [!] Î´ÕÒµ½ .venv£¬½«Ê¹ÓÃÏµÍ³ python
     set "PY=python"
 )
 
@@ -20,11 +20,11 @@ echo [*] Using interpreter: %PY%
 
 "%PY%" -m PyInstaller --version >nul 2>nul
 if errorlevel 1 (
-    echo [!] åœ¨è¯¥è§£é‡Šå™¨å†…å®‰è£… pyinstaller...
+    echo [!] ÔÚ¸Ã½âÊÍÆ÷ÄÚ°²×° pyinstaller...
     "%PY%" -m pip install pyinstaller || goto :err
 )
 
-REM ç”¨ --collect-all è°ƒç”¨å®˜æ–¹ hookï¼Œè‡ªåŠ¨æ”¶é›† customtkinter çš„ä»£ç ã€èµ„æºã€ä¾èµ–
+REM ÓÃ --collect-all µ÷ÓÃ¹Ù·½ hook£¬×Ô¶¯ÊÕ¼¯ customtkinter µÄ´úÂë¡¢×ÊÔ´¡¢ÒÀÀµ
 "%PY%" -m PyInstaller --noconfirm --clean ^
     --name Mochi ^
     --windowed ^
@@ -34,9 +34,9 @@ REM ç”¨ --collect-all è°ƒç”¨å®˜æ–¹ hookï¼Œè‡ªåŠ¨æ”¶é›† customtkinter çš„ä»£ç ã€
 if errorlevel 1 goto :err
 
 echo.
-echo [OK] æ‰“åŒ…å®Œæˆï¼šdist\Mochi.exe
+echo [OK] ´ò°üÍê³É£ºdist\Mochi.exe
 exit /b 0
 
 :err
-echo [X] æ‰“åŒ…å¤±è´¥
+echo [X] ´ò°üÊ§°Ü
 exit /b 1
