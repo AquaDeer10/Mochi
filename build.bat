@@ -35,8 +35,10 @@ if errorlevel 1 goto :err
 
 echo.
 echo [OK] 打包完成：dist\Mochi.exe
+copy dist\Mochi.exe .\Mochi.exe >nul
 exit /b 0
 
 :err
 echo [X] 打包失败
 exit /b 1
+

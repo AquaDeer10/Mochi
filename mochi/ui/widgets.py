@@ -6,6 +6,13 @@ from typing import Optional
 
 import customtkinter as ctk
 
+from .layout_constants import (
+    DATE_PICKER_DAY_WIDTH,
+    DATE_PICKER_ITEM_PADX,
+    DATE_PICKER_MONTH_WIDTH,
+    DATE_PICKER_YEAR_WIDTH,
+)
+
 
 REPEAT_UNIT_LABELS = [("天", "day"), ("周", "week"), ("月", "month"), ("年", "year")]
 REPEAT_LABEL_BY_UNIT = {u: lab for lab, u in REPEAT_UNIT_LABELS}
@@ -22,18 +29,18 @@ class DatePicker(ctk.CTkFrame):
         self.var_m = ctk.StringVar(value=f"{initial.month:02d}")
         self.var_d = ctk.StringVar(value=f"{initial.day:02d}")
 
-        self.cb_y = ctk.CTkComboBox(self, values=years, width=85, variable=self.var_y,
+        self.cb_y = ctk.CTkComboBox(self, values=years, width=DATE_PICKER_YEAR_WIDTH, variable=self.var_y,
                                     command=lambda _=None: self._refresh_days())
         self.cb_m = ctk.CTkComboBox(self, values=[f"{i:02d}" for i in range(1, 13)],
-                                    width=70, variable=self.var_m,
+                        width=DATE_PICKER_MONTH_WIDTH, variable=self.var_m,
                                     command=lambda _=None: self._refresh_days())
         self.cb_d = ctk.CTkComboBox(self, values=[f"{i:02d}" for i in range(1, 32)],
-                                    width=70, variable=self.var_d)
-        self.cb_y.pack(side="left", padx=2)
+                        width=DATE_PICKER_DAY_WIDTH, variable=self.var_d)
+        self.cb_y.pack(side="left", padx=DATE_PICKER_ITEM_PADX)
         ctk.CTkLabel(self, text="年").pack(side="left")
-        self.cb_m.pack(side="left", padx=2)
+        self.cb_m.pack(side="left", padx=DATE_PICKER_ITEM_PADX)
         ctk.CTkLabel(self, text="月").pack(side="left")
-        self.cb_d.pack(side="left", padx=2)
+        self.cb_d.pack(side="left", padx=DATE_PICKER_ITEM_PADX)
         ctk.CTkLabel(self, text="日").pack(side="left")
         self._refresh_days()
 
